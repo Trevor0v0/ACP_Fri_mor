@@ -1,0 +1,519 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "cell01"
+      },
+      "source": [
+        "# Week 3 Lab — Encapsulation (OOP II)\n",
+        "\n",
+        "**192-201 Advanced Computer Programming with Generative AI**\n",
+        "\n",
+        "Reference: *Think Python, 3rd Edition* — Chapter 15 (the `__init__` method) + lecturer supplement on encapsulation and `@property`.\n",
+        "Builds directly on **Week 2** (Classes & Objects). Practice classes continue from *Python 100 Programs* (Devbrat Rudra), **SET-2 #10** and **SET-10 #8**.\n",
+        "\n",
+        "---\n",
+        "\n",
+        "### About this lab\n",
+        "\n",
+        "This is a **guided practice notebook** — it is **not graded**. Last week you built classes with attributes, methods, and `__str__`. This week you make them **safe**: an object should **never** be allowed to hold invalid data (a negative balance, a negative age). This idea is called **encapsulation**.\n",
+        "\n",
+        "Work through the parts **in order**. For each part:\n",
+        "1. Read the short guidance.\n",
+        "2. **Run every code cell** and look at the result.\n",
+        "3. Complete each **Your turn** / **TODO** task.\n",
+        "\n",
+        "\u003E **Run a cell:** click it, then press **Shift + Enter**.\n",
+        "\n",
+        "\u003E **AI-use policy — Level 1 (explain only):** you may ask an AI assistant to *explain* an idea, but **type all the code yourself**. Do not paste AI-written code today."
+      ],
+      "id": "cell01"
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "cell02"
+      },
+      "source": [
+        "## Part 0 — Recap: last week's class\n",
+        "\n",
+        "Here is the `BankAccount` from Week 2. Run it — it works, but it has a hidden weakness we will fix today."
+      ],
+      "id": "cell02"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "cell03"
+      },
+      "outputs": [],
+      "source": [
+        "class BankAccount:\n",
+        "    def __init__(self, owner, balance=0):\n",
+        "        self.owner = owner\n",
+        "        self.balance = balance\n",
+        "\n",
+        "    def deposit(self, amount):\n",
+        "        self.balance += amount\n",
+        "\n",
+        "    def __str__(self):\n",
+        "        return f'{self.owner}: ${self.balance}'\n",
+        "\n",
+        "acct = BankAccount('Mai', 100)\n",
+        "acct.deposit(50)\n",
+        "print(acct)     # Mai: $150"
+      ],
+      "id": "cell03"
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "cell04"
+      },
+      "source": [
+        "## Part 1 — The problem: nothing stops invalid data\n",
+        "\n",
+        "Because `balance` is a plain public attribute, **anyone** can set it to nonsense. Run this and see that Python happily allows an impossible balance:"
+      ],
+      "id": "cell04"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "cell05"
+      },
+      "outputs": [],
+      "source": [
+        "acct = BankAccount('Mai', 100)\n",
+        "acct.balance = -9999      # this should NEVER be allowed!\n",
+        "print(acct)               # Mai: $-9999  \u003C- broken state"
+      ],
+      "id": "cell05"
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "cell06"
+      },
+      "source": [
+        "\u003E The object is now in an **invalid state**. Nothing checked the value. **Encapsulation** is the fix: we keep the data *internal* and force all changes to go through code that can **validate** them.\n",
+        "\n",
+        "**Your turn.** In one sentence (edit this Markdown cell), write down another impossible value a bank account should reject.\n",
+        "\n",
+        "*Your answer:* ..."
+      ],
+      "id": "cell06"
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "cell07"
+      },
+      "source": [
+        "## Part 2 — Start valid: validate inside `__init__`\n",
+        "\n",
+        "The first job of the constructor `__init__` is to build the object in a **valid initial state**. We can check the value there and refuse to build a bad object by raising an error."
+      ],
+      "id": "cell07"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "cell08"
+      },
+      "outputs": [],
+      "source": [
+        "class BankAccount:\n",
+        "    def __init__(self, owner, balance=0):\n",
+        "        if balance \u003C 0:\n",
+        "            raise ValueError('balance cannot be negative')\n",
+        "        self.owner = owner\n",
+        "        self.balance = balance\n",
+        "\n",
+        "good = BankAccount('Mai', 100)    # fine\n",
+        "print(good.balance)               # 100"
+      ],
+      "id": "cell08"
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "cell09"
+      },
+      "source": [
+        "Now try to build an **invalid** account. Run this cell — it **should** raise a `ValueError` (that is the point!):"
+      ],
+      "id": "cell09"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "cell10"
+      },
+      "outputs": [],
+      "source": [
+        "bad = BankAccount('Mai', -50)     # expect: ValueError: balance cannot be negative"
+      ],
+      "id": "cell10"
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "cell11"
+      },
+      "source": [
+        "\u003E Raising an error early is good: the broken object is never created. But `__init__` only protects the *starting* value — someone could still write `acct.balance = -50` afterwards. Parts 3–5 close that gap."
+      ],
+      "id": "cell11"
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "cell12"
+      },
+      "source": [
+        "## Part 3 — Hide the data: private attributes\n",
+        "\n",
+        "To stop direct changes, we mark an attribute as **internal** by starting its name with an underscore. A **double** underscore (`__balance`) makes Python actively hide the name so it cannot be read or set from outside in the usual way *(W3Schools: Encapsulation)*."
+      ],
+      "id": "cell12"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "cell13"
+      },
+      "outputs": [],
+      "source": [
+        "class BankAccount:\n",
+        "    def __init__(self, owner, balance=0):\n",
+        "        if balance \u003C 0:\n",
+        "            raise ValueError('balance cannot be negative')\n",
+        "        self.owner = owner\n",
+        "        self.__balance = balance     # private: note the __ prefix\n",
+        "\n",
+        "acct = BankAccount('Mai', 100)\n",
+        "print(acct.owner)          # Mai   (public, fine)\n",
+        "print(acct.__balance)      # expect: AttributeError  \u003C- it's hidden!"
+      ],
+      "id": "cell13"
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "cell14"
+      },
+      "source": [
+        "\u003E The last line **fails on purpose** — that is encapsulation working. The balance is now protected from casual `acct.__balance = -50` mistakes. But we still need a *safe* way to read and change it — that is the getter and setter."
+      ],
+      "id": "cell14"
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "cell15"
+      },
+      "source": [
+        "## Part 4 — Controlled access: getter and setter\n",
+        "\n",
+        "A **getter** returns the private value; a **setter** changes it *after checking it is valid*. This is exactly the W3Schools encapsulation pattern (`get_age` / `set_age` with an `if` check)."
+      ],
+      "id": "cell15"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "cell16"
+      },
+      "outputs": [],
+      "source": [
+        "class BankAccount:\n",
+        "    def __init__(self, owner, balance=0):\n",
+        "        self.owner = owner\n",
+        "        self.set_balance(balance)          # reuse the setter's validation\n",
+        "\n",
+        "    def get_balance(self):                 # getter\n",
+        "        return self.__balance\n",
+        "\n",
+        "    def set_balance(self, amount):         # setter WITH validation\n",
+        "        if amount \u003C 0:\n",
+        "            raise ValueError('balance cannot be negative')\n",
+        "        self.__balance = amount\n",
+        "\n",
+        "acct = BankAccount('Mai', 100)\n",
+        "print(acct.get_balance())      # 100\n",
+        "acct.set_balance(120)          # allowed\n",
+        "print(acct.get_balance())      # 120"
+      ],
+      "id": "cell16"
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "cell17"
+      },
+      "source": [
+        "Now the guard cannot be bypassed. Run this to confirm a bad value is rejected:"
+      ],
+      "id": "cell17"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "cell18"
+      },
+      "outputs": [],
+      "source": [
+        "acct.set_balance(-5)           # expect: ValueError: balance cannot be negative"
+      ],
+      "id": "cell18"
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "cell19"
+      },
+      "source": [
+        "**Your turn.** Add a `deposit(self, amount)` method to the class above that uses `set_balance` to add money *(so the validation still applies)*. Then test it with a deposit."
+      ],
+      "id": "cell19"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "cell20"
+      },
+      "outputs": [],
+      "source": [
+        "# Your code here:\n"
+      ],
+      "id": "cell20"
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "cell21"
+      },
+      "source": [
+        "## Part 5 — The Pythonic way: `@property`\n",
+        "\n",
+        "Getters and setters work, but Python programmers prefer `@property`. It gives the **safety of a setter** with the **clean look of a normal attribute** — you write `acct.balance` and `acct.balance = 120`, and the validation still runs behind the scenes."
+      ],
+      "id": "cell21"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "cell22"
+      },
+      "outputs": [],
+      "source": [
+        "class BankAccount:\n",
+        "    def __init__(self, owner, balance=0):\n",
+        "        self.owner = owner\n",
+        "        self.balance = balance         # this calls the setter below\n",
+        "\n",
+        "    @property\n",
+        "    def balance(self):                 # the getter\n",
+        "        return self.__balance\n",
+        "\n",
+        "    @balance.setter\n",
+        "    def balance(self, amount):         # the setter (validates)\n",
+        "        if amount \u003C 0:\n",
+        "            raise ValueError('balance cannot be negative')\n",
+        "        self.__balance = amount\n",
+        "\n",
+        "acct = BankAccount('Mai', 100)\n",
+        "print(acct.balance)        # 100   \u003C- looks like a normal attribute\n",
+        "acct.balance = 120         # runs the setter -\u003E validated\n",
+        "print(acct.balance)        # 120"
+      ],
+      "id": "cell22"
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "cell23"
+      },
+      "source": [
+        "Best of both worlds: clean syntax **and** protection. Confirm the guard still fires:"
+      ],
+      "id": "cell23"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "cell24"
+      },
+      "outputs": [],
+      "source": [
+        "acct.balance = -1          # expect: ValueError: balance cannot be negative"
+      ],
+      "id": "cell24"
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "cell25"
+      },
+      "source": [
+        "## Part 6 — Guided build: a bullet-proof `Student`\n",
+        "\n",
+        "Take the `Student` class idea from Week 2 and make it **impossible to break**. Fill in the `# TODO` lines using `@property`.\n",
+        "\n",
+        "**Rules the object must enforce**\n",
+        "- `name` must not be empty.\n",
+        "- `age` must be between 1 and 120.\n",
+        "- Setting either to an invalid value must raise `ValueError`."
+      ],
+      "id": "cell25"
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "cell26"
+      },
+      "outputs": [],
+      "source": [
+        "class Student:\n",
+        "    def __init__(self, name, age):\n",
+        "        self.name = name        # calls the name setter\n",
+        "        self.age = age          # calls the age setter\n",
+        "\n",
+        "    @property\n",
+        "    def name(self):\n",
+        "        return self.__name\n",
+        "\n",
+        "    @name.setter\n",
+        "    def name(self, value):\n",
+        "        # TODO: if value is empty (''), raise ValueError('name cannot be empty')\n",
+        "        # TODO: otherwise store it in self.__name\n",
+        "        pass\n",
+        "\n",
+        "    @property\n",
+        "    def age(self):\n",
+        "        return self.__age\n",
+        "\n",
+        "    @age.setter\n",
+        "    def age(self, value):\n",
+        "        # TODO: if value \u003C 1 or value \u003E 120, raise ValueError('age out of range')\n",
+        "        # TODO: otherwise store it in self.__age\n",
+        "        pass\n",
+        "\n",
+        "    def __str__(self):\n",
+        "        return f'{self.name} (age {self.age})'\n",
+        "\n",
+        "# After completing the TODOs, these should work:\n",
+        "# s = Student('Mai', 19)\n",
+        "# print(s)               # Mai (age 19)\n",
+        "# s.age = 200            # should raise ValueError\n",
+        "# Student('', 19)        # should raise ValueError"
+      ],
+      "id": "cell26"
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "cell27"
+      },
+      "source": [
+        "**Check your work.** Once the TODOs are done: `Student('Mai', 19)` builds fine and prints `Mai (age 19)`; `s.age = 200` raises `ValueError`; and `Student('', 19)` raises `ValueError`."
+      ],
+      "id": "cell27"
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "cell28"
+      },
+      "source": [
+        "## Part 7 — Design review (work in pairs)\n",
+        "\n",
+        "With a partner, look at each other's `Student` class and fill in this table for **one** attribute you protected.\n",
+        "\n",
+        "**Example — BankAccount.balance:**\n",
+        "\n",
+        "| Attribute | Rule it enforces | What happens on bad input |\n",
+        "|---|---|---|\n",
+        "| `balance` | must be \u003E= 0 | raises `ValueError` |\n",
+        "\n",
+        "**Your turn.** Double-click the table below and fill it in for your class:\n",
+        "\n",
+        "| Attribute | Rule it enforces | What happens on bad input |\n",
+        "|---|---|---|\n",
+        "| *(your attribute)* | *(the rule)* | *(the result)* |"
+      ],
+      "id": "cell28"
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "cell29"
+      },
+      "source": [
+        "## Part 8 — Learning with an AI assistant (Level 1)\n",
+        "\n",
+        "You may ask an assistant to **explain**, not to write your validation. Good Level-1 questions:\n",
+        "\n",
+        "- \"Explain what the `@property` decorator does, with a simple example.\"\n",
+        "- \"Why does a double underscore `__balance` make an attribute hard to access from outside?\"\n",
+        "- \"What is the difference between a getter/setter and a plain attribute?\"\n",
+        "- \"When should code `raise ValueError` instead of `return`?\"\n",
+        "\n",
+        "**Not allowed today:** asking the assistant to write the validated `Student` class for you and pasting it in."
+      ],
+      "id": "cell29"
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "cell30"
+      },
+      "source": [
+        "## Before you finish — quick checklist\n",
+        "\n",
+        "You should now be able to:\n",
+        "\n",
+        "- [ ] Explain why a public attribute can leave an object in an **invalid state**\n",
+        "- [ ] Validate a value inside `__init__` so an object starts valid\n",
+        "- [ ] Make an attribute **private** with a `__` prefix\n",
+        "- [ ] Write a **getter** and a **setter** that validates before storing\n",
+        "- [ ] Use `@property` to get clean syntax **and** validation\n",
+        "- [ ] Complete the bullet-proof `Student` class\n",
+        "\n",
+        "**Before Week 4:** make sure your validated `Student` runs and is pushed to your GitHub repo. Next week we add **inheritance & polymorphism** — building specialised classes (e.g. `Shape` → `Circle`, `Rectangle`) that share and override behaviour.\n",
+        "\n",
+        "*Well done!*"
+      ],
+      "id": "cell30"
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "display_name": "Python 3",
+      "language": "python",
+      "name": "python3"
+    },
+    "language_info": {
+      "name": "python",
+      "version": "3.x"
+    },
+    "colab": {
+      "provenance": []
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}
