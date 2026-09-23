@@ -1,98 +1,6 @@
-"""
-================================================================================
- Assignment 03 — Refactor the Messy Store System
- 192-201 Advanced Computer Programming with Generative AI
- Week 5 — OOP Design & Refactoring   |   Faculty of IT (International), Siam University
- Lecturer: Hrang Kap Lian
-================================================================================
-
- Maps to: CLO1 (object-oriented design) and CLO5 (responsible, verified AI use)
- Weight:  10 Points     AI-use level: Level 2 (AI-assisted + PROMPT LOG required)
-
---------------------------------------------------------------------------------
- THE TASK
---------------------------------------------------------------------------------
- You are given ONE working program that is badly written. Do NOT add features and
- do NOT change what it does. REFACTOR it: reshape the code into a clean,
- object-oriented design while producing the EXACT SAME output.
-
-   The one rule of refactoring:  same behaviour, cleaner code.
-   If the output changes, it is no longer a refactor — it is a bug.
-
- How to run:
-   python Assignment_03.py
- It prints PASS when your refactor reproduces the original output exactly,
- or FAIL with the first line that differs.
-
---------------------------------------------------------------------------------
- WHAT YOU WILL PRACTISE (use ALL of these)
---------------------------------------------------------------------------------
-   Week 2  Model data as CLASSES with attributes and methods (not tuples/lists).
-   Week 3  ENCAPSULATION — validate object state in the constructor.
-   Week 4  INHERITANCE & POLYMORPHISM — replace the `if tier == ...` chains
-           with a family of classes.
-   Week 5  COMPOSITION (has-a) — an Order has-a customer and has-many items;
-           an item has-a product.
-   Week 5  PURE FUNCTIONS vs MODIFIERS — calculation methods RETURN values and
-           print nothing; keep them separate from the receipt printing.
-   Week 5  INTERFACE vs IMPLEMENTATION — separate WHAT the receipt shows from
-           HOW the totals are computed.
-
---------------------------------------------------------------------------------
- RULES
---------------------------------------------------------------------------------
- 1. Behaviour must stay identical — the self-test must print PASS.
- 2. Refactor only. No new discounts, no prettier receipts, no extra products.
- 3. You choose the class design — there is no single correct answer.
- 4. Level-2 AI use: you may use AI to explain/suggest/refactor, but YOU verify
-    every change and you keep a PROMPT LOG (in CHANGES.md).
- 5. Work in small steps: change one thing -> run -> keep it green.
-
---------------------------------------------------------------------------------
- THE SCENARIO
---------------------------------------------------------------------------------
- A small online store prints a receipt per order and a grand total. Business rules:
-   - Tax: electronics & stationery = 7%; food = tax-free.
-   - Membership discount on the subtotal:
-         tier      subtotal<=100   subtotal>100
-         none        0%              0%
-         silver      2%              5%
-         gold        5%              10%
-         platinum    10%             15%
-   - Bulk discount: 10+ items in total -> add another 3% of the subtotal.
-   - total = subtotal - discount + tax
-   - points = int(total // 10) * tier_multiplier   (none x1, silver x2, gold x3, platinum x5)
- You do not change these rules — you express them cleanly.
-
---------------------------------------------------------------------------------
- YOUR TASKS  (see the rubric at the bottom)
---------------------------------------------------------------------------------
-   A. (required) Model the domain with classes + composition
-                 e.g. Product, OrderItem (has-a Product), Customer, Order.
-   B. (required) Encapsulate & validate state in constructors (e.g. qty >= 1).
-   C. (required) Replace the tier `if/elif` chains (discount AND points) with
-                 polymorphism — a class family, no `if tier == ...`.
-   D. (required) Separate calculation from printing: pure methods return numbers.
-   E. (required) Kill magic numbers (name them) and remove the leftover `global`.
-   F. (stretch)  Let each product decide its own tax — no `if category` in totals.
-   G. (stretch)  Add a sensible __str__ where it helps.
-
---------------------------------------------------------------------------------
- SUBMIT
---------------------------------------------------------------------------------
-   1) This file, Assignment_03.py, with your refactor (self-test prints PASS).
-   2) CHANGES.md — your written explanation of each change + your prompt log.
-================================================================================
-"""
-
 import io
 import contextlib
 
-
-# ==============================================================================
-#  LEGACY STORE SYSTEM  —  messy but working.   DO NOT EDIT THIS SECTION.
-#  Read it, understand it, and use its output as the correct behaviour.
-# ==============================================================================
 PRODUCTS = [
     ("Laptop", 1200.0, "electronics"),
     ("Headphones", 200.0, "electronics"),
@@ -168,10 +76,6 @@ def legacy_main():
     print("GRAND TOTAL (all orders): " + str(round(grand, 2)))
 
 
-# ==============================================================================
-#  BEHAVIOUR LOCK  —  DO NOT EDIT.
-#  Captures the exact output of the legacy program as the target you must match.
-# ==============================================================================
 def capture(fn):
     """Run fn() and return everything it printed, as a string."""
     buf = io.StringIO()
@@ -181,13 +85,6 @@ def capture(fn):
 
 
 GOLDEN_OUTPUT = capture(legacy_main)
-
-
-# ==============================================================================
-#  YOUR REFACTORED SOLUTION  —  WRITE YOUR CODE BELOW.
-#  Design your own classes. A suggested skeleton is commented out — change freely.
-#  Your program must define refactored_main() which PRINTS the same output.
-# ==============================================================================
 
 TAX_RATE = 0.07
 FOOD_TAX_RATE = 0.0
@@ -370,10 +267,6 @@ def refactored_main():
         grand_total += order.total()
     print("GRAND TOTAL (all orders): " + str(round(grand_total, 2)))
 
-
-# ==============================================================================
-#  SELF-TEST  —  DO NOT EDIT.   Run:  python Assignment_03.py
-# ==============================================================================
 def _check():
     try:
         your_output = capture(refactored_main)
@@ -402,17 +295,3 @@ def _check():
 if __name__ == "__main__":
     _check()
 
-
-# ==============================================================================
-#  RUBRIC (10 pts)
-#   Behaviour preserved (self-test PASS) .................. 2
-#   Domain modelling & composition ....................... 2
-#   Polymorphism (tier discount & points, no if/elif) .... 1.5
-#   Pure calculation vs I/O separation ................... 1.5
-#   Encapsulation & validation ........................... 1
-#   Clean code (names, no magic numbers, DRY, no global).. 1
-#   CHANGES.md explanation (per-change, before->after) ...  0.5
-#   CHANGES.md prompt log (Level-2) ......................  0.5
-#  NOTE: passing the test alone is only 20/100 — most marks are for the DESIGN
-#        and for explaining and verifying your changes. 
-# ==============================================================================
